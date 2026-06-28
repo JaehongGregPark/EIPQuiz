@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>정보처리기사 기출문제</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        .question { border-bottom: 1px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
+        .options { list-style-type: none; }
+    </style>
+</head>
+<body>
+    <h1>기출문제 목록</h1>
+    <form method="GET">
+        <!-- 분류 선택 -->
+        <select name="category" onchange="this.form.submit()">
+            <option value="">-- 분류 선택 --</option>
+            {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if selected_category == cat.id|slugify %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <!-- 시험지 선택 -->
+        <select name="exam" onchange="this.form.submit()">
+            <option value="">-- 시험지 선택 --</option>
+            {% for ex in exams %}
+                <option value="{{ ex.id }}" {% if selected_exam == ex.id|slugify %}selected{% endif %}>
+                    {{ ex.title }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>  
+    {% for q in questions %}
+        <div class="question">
+            <p><strong>Q{{ q.no }}. {{ q.content }}</strong></p>
+            <ul class="options">
+                {% for opt in q.options %}
+                    <li>{{ opt }}</li>
+                {% endfor %}
+            </ul>
+            <p style="color: blue;">정답: {{ q.answer|default:"준비 중" }}</p>
+        </div>
+    {% empty %}
+        <p>추출된 문제가 없습니다. JSON 파일을 확인해 주세요.</p>
+    {% endfor %}
+    <!-- 문제 지문 아래에 추가 -->
+<p class="card-text fs-5">{{ question.content|linebreaksbr }}</p>
+
+{% if question.images.exists %}
+    <div class="quiz-image-container my-3 text-center">
+        {% for img in question.images.all %}
+            <img src="{{ img.image_file.url }}" class="img-fluid rounded border" alt="문제 이미지" style="max-height: 400px;">
+        {% endfor %}
+    </div>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="max-width: 700px; margin: 50px auto;">
+    <div style="background: var(--card); padding: 40px; border-radius: 15px; border: 1px solid var(--border);">
+        <h2 style="color: var(--text); margin-bottom: 10px;">📄 실기 파일 일괄 등록</h2>
+        <p style="color: var(--sub); margin-bottom: 30px;">정보처리기사 실기 PDF를 업로드하면 과목별로 자동 파싱합니다.</p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="margin-bottom: 20px;">
+                <label style="color: var(--text); display: block; margin-bottom: 8px;">대상 시험지</label>
+                <select name="exam_id" style="width: 100%; padding: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px;">
+                    {% for e in exams %}
+                    <option value="{{ e.id }}">{{ e.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <label style="color: var(--text); display: block; margin-bottom: 8px;">PDF 파일 선택</label>
+                <input type="file" name="quiz_file" accept=".pdf" style="color: var(--text);">
+            </div>
+
+            <button type="submit" class="nav-btn primary" style="width: 100%;">업로드 및 분석 시작</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

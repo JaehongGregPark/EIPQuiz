@@ -1,0 +1,76 @@
+<!-- templates/admin/quiz/bulk_edit.html -->
+{% extends "admin/base_site.html" %}
+{% block content %}
+<style>
+    .bulk-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    .bulk-table th { background: #417690; color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
+    .bulk-table td { padding: 10px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    .question-content { font-weight: bold; margin-bottom: 8px; color: #333; display: block; }
+    .choice-container { font-size: 0.85em; color: #666; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .choice-item { padding: 4px; border: 1px border-radius: 4px; background: #f9f9f9; }
+    .has-img { color: #d9534f; font-weight: bold; font-size: 0.8em; }
+    .input-number { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    .input-answer { width: 100px; padding: 5px; border: 2px solid #417690; border-radius: 4px; font-weight: bold; }
+    .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #eee; padding: 15px 20px; border-top: 1px solid #ccc; text-align: right; z-index: 1000; }
+</style>
+
+<h2>[ {{ exam.title }} ] 데이터 정밀 일괄 편집</h2>
+<p style="color: #666;">* 번호와 정답을 수정하고 하단의 저장 버튼을 누르세요. 보기의 🖼️ 표시는 이미지가 등록된 상태를 의미합니다.</p>
+
+<form method="post" style="margin-bottom: 80px;">
+    {% csrf_token %}
+    <table class="bulk-table">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>문제 및 보기 정보</th>
+                <th>정답(Answer)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in questions %}
+            <tr>
+                <!-- 1. 번호 수정 -->
+                <td style="width: 80px; text-align: center;">
+                    <input type="number" name="number_{{q.id}}" value="{{q.number}}" class="input-number">
+                </td>
+                
+                <!-- 2. 지문 요약 및 보기/이미지 상태 확인 -->
+                <td>
+                    <span class="question-content">{{ q.content|truncatechars:150 }}</span>
+                    
+                    {% if q.images.exists %}
+                        <div style="margin-bottom: 8px;"><span class="has-img">🖼️ 지문 이미지 포함</span></div>
+                    {% endif %}
+
+                    <div class="choice-container">
+                        {% for choice in q.choices.all|dictsort:"id" %}
+                        <div class="choice-item">
+                            <strong>{{ forloop.counter }}.</strong> {{ choice.choice_text|truncatechars:50 }}
+                            {% if choice.image_file %}
+                                <span class="has-img">[🖼️ 보기이미지]</span>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                            <div style="color: #f0ad4e;">⚠️ 등록된 보기가 없습니다.</div>
+                        {% endfor %}
+                    </div>
+                </td>
+
+                <!-- 3. 정답 수정 -->
+                <td style="width: 120px; text-align: center;">
+                    <input type="text" name="answer_{{q.id}}" value="{{q.answer|default_if_none:''}}" class="input-answer" placeholder="정답 입력">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- 하단 고정 버튼 바 -->
+    <div class="sticky-footer">
+        <span style="float: left; line-height: 40px; color: #666;">현재 시험지: <strong>{{ exam.title }}</strong> (총 {{ questions.count }}문제)</span>
+        <a href="javascript:history.back()" class="button" style="background: #ccc; color: #333; margin-right: 10px;">취소하고 돌아가기</a>
+        <button type="submit" class="button" style="background: #417690; color: white; height: 35px; cursor: pointer;">💾 모든 변경사항 일괄 저장</button>
+    </div>
+</form>
+{% endblock %}

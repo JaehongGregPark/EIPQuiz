@@ -1,0 +1,92 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main" style="max-width: 1000px; font-family: 'Pretendard', sans-serif;">
+    <h1>🛠️ 기출문제 시스템 통합 운영 센터</h1>
+    <p>데이터 업로드부터 주관식/객관식 분석, 이미지 매칭까지 이 페이지에서 통합 관리합니다.</p>
+
+    <hr>
+
+    <div style="margin-bottom: 30px; padding: 20px; background: #eef9f1; border: 1px solid #c3e6cb; border-left: 5px solid #28a745;">
+        <h3 style="color: #155724; margin-top: 0;">🚀 0단계: 스마트 통합 파일 업로드 (자동 분석)</h3>
+        <p class="text-muted small">파일을 선택하면 문항이 자동 생성됩니다. 기존 시험지가 없다면 제목을 직접 입력하세요.</p>
+        
+        <form action="{% url 'admin_manual' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                
+                <div style="flex: 2; min-width: 350px;">
+                    <label style="font-size: 12px; font-weight: bold;">대상 시험지 선택 (없으면 우측에 제목 입력)</label>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <select name="exam_id" style="flex: 1; padding: 7px;">
+                            <option value="">-- 신규 등록(직접 입력) --</option>
+                            {% for exam in exams %}
+                            <option value="{{ exam.id }}">{{ exam.title }} (ID:{{ exam.id }})</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="new_exam_title" placeholder="새 시험지 제목 (예: 2009년 1회 실기)" style="flex: 1.5; padding: 6px; border: 1px solid #ccc;">
+                    </div>
+                </div>
+
+                <div style="flex: 0.6;">
+                    <label style="font-size: 12px; font-weight: bold;">분석 모드</label>
+                    <select name="upload_mode" style="width: 100%; padding: 7px; margin-top: 5px;">
+                        <option value="practical">실기 (PDF 파서)</option>
+                        <option value="written">필기 (이미지 OCR)</option>
+                    </select>
+                </div>
+
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: bold;">파일 업로드 (JPG/PDF)</label>
+                    <input type="file" name="upload_file" style="margin-top: 5px; font-size: 12px;" required>
+                </div>
+
+                <button type="submit" class="button" style="background: #28a745; height: 35px; border: none; cursor: pointer;">분류 및 등록</button>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-bottom: 30px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd;">
+        <h3>1️⃣ JSON 수동 업로드 지침</h3>
+        <p>파서가 지원하지 않는 특수 양식은 <code>db_uploader.py</code>를 통해 JSON으로 직접 입력하세요.</p>
+        <a href="{% url 'admin:quiz_exam_changelist' %}" class="button" style="background: #417690;">시험지 목록 확인하기</a>
+    </div>
+
+    <div style="margin-bottom: 30px; padding: 15px; background: #fff5f5; border: 1px solid #ebccd1; border-left: 5px solid #d9534f;">
+        <h3>2️⃣ 이미지 자동 매칭 실행</h3>
+        <p>파일명 규칙: <code>시험지ID_문제번호(_보기번호).jpg</code></p>
+        <form action="{% url 'admin_image_matcher' %}" method="post">
+            {% csrf_token %}
+            <input type="text" name="image_dir" placeholder="서버 내 이미지 폴더 절대 경로 입력" style="width: 70%; padding: 5px;">
+            <button type="submit" class="button" style="background: #d9534f;">매칭 시작</button>
+        </form>
+    </div>
+
+    <div class="card" style="margin-bottom: 30px; padding: 20px; background: #f0f7ff; border: 1px solid #bcdff1; border-left: 5px solid #0275d8;">
+        <h4 class="card-title text-primary" style="margin-top:0;">📑 3️⃣ 정답표 이미지 스캔 업데이트</h4>
+        <p class="text-muted small">정답표 사진을 올리면 텍스트를 분석해 정답을 일괄 입력합니다.</p>
+        
+        <form action="{% url 'admin_answer_ocr_update' %}" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: flex-end;">
+            {% csrf_token %}
+            <div style="flex: 1;">
+                <select name="exam_id" style="width: 100%; padding: 8px;" required>
+                    <option value="">-- 대상 시험지 선택 --</option>
+                    {% for exam in exams %}
+                    <option value="{{ exam.id }}">{{ exam.title }} (ID:{{ exam.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex: 1.5;">
+                <input type="file" name="answer_sheet" accept="image/*" required style="width: 100%;">
+            </div>
+            <button type="submit" class="button" style="background: #0275d8; border: none; height: 35px;">정답표 분석 실행</button>
+        </form>
+    </div>
+
+    <div style="margin-bottom: 30px; padding: 15px; background: #fff; border: 1px solid #ddd;">
+        <h3>4️⃣ 데이터 최종 검수 및 일괄 편집</h3>
+        <p>각 시험지의 <strong>[🎯 일괄 편집]</strong> 버튼을 클릭하여 최종 확인을 거쳐야 합니다.</p>
+        <a href="{% url 'admin:quiz_exam_changelist' %}" class="button" style="background: #337ab7;">일괄 편집하러 가기</a>
+    </div>
+</div>
+{% endblock %}

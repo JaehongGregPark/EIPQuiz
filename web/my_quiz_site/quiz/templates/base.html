@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 운영 관리 시스템</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <style>
+        /* 시스템 공통 다크/라이트 테마 변수 */
+        :root {
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #212529;
+            --sub: #6c757d;
+            --border: #dee2e6;
+            --primary: #417690; /* 장고 관리자 스타일 색상 */
+            --correct: #28a745;
+            --wrong: #dc3545;
+        }
+
+        /* 다크모드 대응 스타일 (원하실 경우 활용) */
+        .dark-mode {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --sub: #999;
+            --border: #333;
+            --primary: #5dade2;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.3s;
+        }
+
+        /* 네비게이션 바 */
+        .navbar {
+            background-color: #417690;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .navbar a { color: white; text-decoration: none; font-weight: bold; }
+
+        /* 공통 버튼 스타일 */
+        .nav-btn { padding: 10px 20px; border-radius: 5px; cursor: pointer; border: 1px solid var(--border); font-weight: 600; }
+        .nav-btn.primary { background-color: var(--primary); color: white; border: none; }
+        .sub-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+
+        .container { padding: 20px; }
+    </style>
+</head>
+<body class="light-mode">
+    <nav class="navbar">
+        <div class="nav-logo">
+            <a href="/">🚀 QUIZ ADMIN CENTER</a>
+        </div>
+        <div class="nav-links">
+            <a href="/api/admin-manual/" style="margin-left: 20px;">통합 운영</a>
+            <a href="/admin/" style="margin-left: 20px;">장고 순정 관리자</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    {% if messages %}
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        {% for message in messages %}
+        <div style="padding: 15px 25px; margin-bottom: 10px; border-radius: 8px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 5px solid {% if message.tags == 'success' %}#28a745{% else %}#dc3545{% endif %};">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(() => {
+            const msgs = document.querySelectorAll('[style*="position: fixed"]');
+            msgs.forEach(m => m.style.display = 'none');
+        }, 3000);
+    </script>
+    {% endif %}
+</body>
+</html>

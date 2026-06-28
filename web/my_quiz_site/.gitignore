@@ -1,0 +1,31 @@
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Django 관련
+db.sqlite3
+media/
+staticfiles/
+
+# Migration 관련 (설계도는 남기고 이력만 제외하고 싶을 때)
+# 모든 앱의 migration 폴더 내 파일을 무시하되, __init__.py는 유지합니다.
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# AI 분석 관련 (생성된 JSON이나 임시 PDF)
+*.json
+*.pdf
+*.png
+*.jpg
+*.jpeg
+
+# 운영체제 관련
+.DS_Store
+Thumbs.db
+
+# 기타 설정
+.vscode/
+.idea/

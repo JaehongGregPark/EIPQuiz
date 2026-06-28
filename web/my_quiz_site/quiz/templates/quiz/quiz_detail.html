@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="quiz-app" class="light-mode">
+    <div class="quiz-outer-wrapper">
+        <div class="quiz-container">
+            
+            <div class="quiz-header">
+                <div class="header-left">
+                    <h1>{{ exam.title }}</h1>
+                    <button id="theme-toggle" onclick="toggleDarkMode()" class="sub-btn">🌙 다크 모드</button>
+                </div>
+                <div class="status-box">
+                    <span id="progress-text">1</span>
+                    <span style="color: var(--sub);"> / {{ questions|length }} 문제</span>
+                </div>
+            </div>
+
+            <form id="quiz-main-form" onsubmit="return false;">
+                {% for q in questions %}
+                <div class="question-card" id="question-{{ forloop.counter }}" 
+                     style="display: {% if forloop.first %}block{% else %}none{% endif %}; animation: fadeIn 0.4s;" 
+                     data-answer="{{ q.answer }}">
+                    
+                    <div class="question-title">
+                        <span class="q-num">{{ q.number }}</span>
+                        {{ q.content|linebreaksbr }}
+                    </div>
+
+                    {% if q.images.all %}
+                    <div class="q-image-box">
+                        {% for img in q.images.all %}
+                        <img src="{{ img.image_file.url }}" class="main-q-img">
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="options-list">
+                        {% for choice in q.choices.all %}
+                        <label class="option-label" data-qidx="{{ forloop.parentloop.counter }}" data-val="{{ forloop.counter }}">
+                            <input type="radio" name="q_{{ q.number }}" value="{{ forloop.counter }}" style="display: none;">
+                            <span class="option-number">{{ forloop.counter }}</span>
+                            <span class="choice-text">{{ choice.choice_text }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="action-container">
+                        <button type="button" class="sub-btn check-ans-btn" onclick="peekAnswer('{{ forloop.counter }}')">
+                            🎯 정답 확인
+                        </button>
+                        <button type="button" class="sub-btn explain-toggle-btn" onclick="toggleExplanation('{{ forloop.counter }}')">
+                            🔍 해설 보기
+                        </button>
+                    </div>
+
+                    <div class="explanation-box" id="ex-{{ forloop.counter }}" style="display: none;">
+                        <div class="ex-divider"></div>
+                        <div class="ex-badge">정답 해설</div>
+                        <p class="ex-content">
+                            <strong>공식 정답: {{ q.answer }}번</strong><br><br>
+                            {{ q.explanation|default:"등록된 상세 해설이 없습니다."|linebreaksbr }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </form>
+
+            <div class="quiz-controls">
+                <button id="btn-prev" onclick="moveQuestion(-1)" class="nav-btn">이전 문제</button>
+                <button id="btn-next" onclick="handleNext()" class="nav-btn primary">다음 문제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* CSS 변수 테마 설정 */
+    :root {
+        --bg: #f4f7f6; --card: #ffffff; --text: #2c3e50; --sub: #888;
+        --border: #e0e0e0; --primary: #417690; --correct: #2ecc71; --wrong: #e74c3c;
+    }
+    .dark-mode {
+        --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --sub: #999;
+        --border: #333; --primary: #5dade2;
+    }
+
+    /* 기본 레이아웃 */
+    .quiz-outer-wrapper { background-color: var(--bg); min-height: 100vh; padding: 30px 10px; transition: 0.3s; }
+    .quiz-container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 35px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); color: var(--text); }
+    .quiz-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; }
+    #progress-text { font-size: 1.5rem; color: var(--primary); font-weight: bold; }
+
+    /* 문제 스타일 */
+    .question-title { font-size: 1.25rem; line-height: 1.6; margin-bottom: 25px; font-weight: 600; }
+    .q-num { background: var(--primary); color: white; padding: 4px 12px; border-radius: 8px; margin-right: 12px; font-size: 1rem; }
+    .main-q-img { max-width: 100%; border-radius: 10px; margin-bottom: 25px; border: 1px solid var(--border); }
+    
+    /* 보기 스타일 */
+    .option-label { display: flex; align-items: center; padding: 18px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+    .option-label:hover { border-color: var(--primary); background: rgba(65,118,144,0.05); }
+    .option-label.active { border-color: var(--primary); background: rgba(65,118,144,0.12); font-weight: 600; }
+    .option-number { width: 26px; height: 26px; border: 1px solid var(--sub); border-radius: 50%; text-align: center; line-height: 24px; margin-right: 15px; font-size: 0.9rem; flex-shrink: 0; }
+    
+    /* 정오답 스타일링 */
+    .option-label.correct { border-color: var(--correct) !important; background: rgba(46,204,113,0.15) !important; color: var(--correct); font-weight: bold; }
+    .option-label.wrong { border-color: var(--wrong) !important; background: rgba(231,76,60,0.1) !important; color: var(--wrong); }
+
+    /* 버튼 컨테이너 및 해설 */
+    .action-container { display: flex; gap: 10px; margin-top: 25px; }
+    .check-ans-btn { flex: 1; border: 1px solid var(--correct); color: var(--correct); }
+    .explain-toggle-btn { flex: 2; border: 1px solid var(--border); color: var(--text); }
+    .sub-btn { background: none; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: inherit; font-weight: 600; }
+    .sub-btn:hover { opacity: 0.8; background: rgba(0,0,0,0.02); }
+
+    .explanation-box { margin-top: 15px; padding: 20px; background: rgba(0,0,0,0.03); border-radius: 10px; border-left: 5px solid var(--primary); }
+    .ex-divider { height: 1px; background: var(--border); margin-bottom: 15px; }
+    .ex-badge { background: var(--primary); color: white; display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 10px; }
+
+    /* 하단 네비게이션 */
+    .quiz-controls { display: flex; justify-content: space-between; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 30px; }
+    .nav-btn { padding: 14px 35px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: bold; font-size: 1rem; transition: 0.2s; }
+    .nav-btn.primary { background: var(--primary); color: white; border: none; }
+    .nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+    let currentIdx = 1;
+    const totalIdx = {{ questions|length }};
+    let graded = false;
+
+    // 1. 테마 전환 (다크/라이트)
+    function toggleDarkMode() {
+        const app = document.getElementById('quiz-app');
+        app.classList.toggle('dark-mode');
+        const isDark = app.classList.contains('dark-mode');
+        document.getElementById('theme-toggle').innerText = isDark ? "☀️ 라이트 모드" : "🌙 다크 모드";
+    }
+
+    // 2. 문제 이동 로직
+    function moveQuestion(step) {
+        const nextIdx = currentIdx + step;
+        if (nextIdx < 1 || nextIdx > totalIdx) return;
+
+        document.getElementById(`question-${currentIdx}`).style.display = 'none';
+        currentIdx = nextIdx;
+        document.getElementById(`question-${currentIdx}`).style.display = 'block';
+        
+        document.getElementById('progress-text').innerText = currentIdx;
+        document.getElementById('btn-prev').style.visibility = (currentIdx === 1) ? 'hidden' : 'visible';
+        
+        const nextBtn = document.getElementById('btn-next');
+        if (currentIdx === totalIdx && !graded) {
+            nextBtn.innerText = "답안 최종 제출 및 채점";
+        } else {
+            nextBtn.innerText = graded ? "결과 보기" : "다음 문제";
+        }
+    }
+
+    // 3. 다음/제출 버튼 핸들러
+    function handleNext() {
+        if (currentIdx === totalIdx && !graded) {
+            if(confirm("모든 답안을 제출하고 채점하시겠습니까?")) startGrading();
+        } else {
+            moveQuestion(1);
+        }
+    }
+
+    // 4. 실시간 정답 미리보기 (개별 버튼)
+    function peekAnswer(idx) {
+        const card = document.getElementById(`question-${idx}`);
+        const correctAns = card.getAttribute('data-answer').trim();
+        const labels = card.querySelectorAll('.option-label');
+        const btn = card.querySelector('.check-ans-btn');
+
+        let isShowing = false;
+        labels.forEach(l => { if(l.classList.contains('correct')) isShowing = true; });
+
+        if (isShowing && !graded) {
+            labels.forEach(l => l.classList.remove('correct'));
+            btn.innerText = "🎯 정답 확인";
+            btn.style.background = "none";
+        } else {
+            labels.forEach(l => {
+                if(l.getAttribute('data-val') === correctAns) l.classList.add('correct');
+            });
+            btn.innerText = "✅ 확인됨";
+            btn.style.background = "rgba(46, 204, 113, 0.1)";
+        }
+    }
+
+    // 5. 해설 토글 기능
+    function toggleExplanation(idx) {
+        const exBox = document.getElementById(`ex-${idx}`);
+        const btn = document.getElementById(`question-${idx}`).querySelector('.explain-toggle-btn');
+        if (exBox.style.display === 'none') {
+            exBox.style.display = 'block';
+            btn.innerText = "🔼 해설 접기";
+            peekAnswer(idx); // 해설 볼 때 정답도 같이 표시
+        } else {
+            exBox.style.display = 'none';
+            btn.innerText = "🔍 해설 보기";
+        }
+    }
+
+    // 6. 전체 채점 로직
+    function startGrading() {
+        graded = true;
+        let score = 0;
+
+        for (let i = 1; i <= totalIdx; i++) {
+            const card = document.getElementById(`question-${i}`);
+            const correctAns = card.getAttribute('data-answer').trim();
+            const selected = card.querySelector('input[type="radio"]:checked');
+            
+            // 모든 해설 및 정답 강제 노출
+            document.getElementById(`ex-${i}`).style.display = 'block';
+            const actionBtns = card.querySelector('.action-container');
+            if(actionBtns) actionBtns.style.display = 'none'; // 채점 후엔 버튼 숨김 (깔끔하게)
+
+            card.querySelectorAll('.option-label').forEach(label => {
+                const val = label.getAttribute('data-val');
+                if (val === correctAns) label.classList.add('correct');
+                if (selected && selected.value === val && val !== correctAns) label.classList.add('wrong');
+            });
+
+            if (selected && selected.value === correctAns) score++;
+        }
+
+        alert(`학습이 완료되었습니다!\n최종 점수: ${score} / ${totalIdx}`);
+        moveQuestion(-(totalIdx - 1)); // 1번으로 이동
+    }
+
+    // 7. 이벤트 위임 (보기 선택)
+    document.addEventListener('click', function(e) {
+        const label = e.target.closest('.option-label');
+        if (!label || graded) return;
+
+        const qidx = label.getAttribute('data-qidx');
+        const container = document.getElementById(`question-${qidx}`);
+        
+        container.querySelectorAll('.option-label').forEach(el => el.classList.remove('active'));
+        label.classList.add('active');
+        label.querySelector('input').checked = true;
+    });
+
+    window.onload = () => {
+        document.getElementById('btn-prev').style.visibility = 'hidden';
+    };
+</script>
+{% endblock %}
