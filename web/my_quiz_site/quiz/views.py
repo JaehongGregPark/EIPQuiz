@@ -1,5 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
+from django.conf import settings
 from django.core.files import File
 from rest_framework import viewsets
 from .serializers import QuestionSerializer
@@ -110,9 +111,15 @@ def admin_image_matcher(request):
     return redirect('admin_manual')
 
 
-# 1. 구글 인증 키 설정 (본인의 JSON 키 파일 경로로 수정하세요)
-# 예: os.path.join(settings.BASE_DIR, 'keys', 'your-google-key.json')
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Users/USER/Documents/project/web/my_quiz_site/keys/service-account-key.json"
+# 1. 구글 인증 키 설정
+# 이전엔 로컬 Windows 절대경로("C:/Users/USER/Documents/project/...")가 하드코딩돼
+# 있어서 리눅스 컨테이너에서는 그 경로 자체가 존재할 수 없었습니다(OS도 다르고 실제
+# 프로젝트 폴더명도 다름). BASE_DIR 기준 상대경로로 바꾸고, GOOGLE_APPLICATION_CREDENTIALS가
+# 이미 환경변수로 설정돼 있으면(예: 운영 서버) 그 값을 우선 사용하도록 함.
+os.environ.setdefault(
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    str(settings.BASE_DIR / "keys" / "service-account-key.json"),
+)
 
 def admin_answer_ocr_update(request):
     if request.method == "POST" and request.FILES.get('answer_sheet'):

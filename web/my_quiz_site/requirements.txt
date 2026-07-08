@@ -1,0 +1,14 @@
+Django>=5.0,<6.0
+djangorestframework>=3.15,<4.0
+django-cors-headers>=4.4,<5.0
+whitenoise>=6.6,<7.0
+psycopg2-binary>=2.9,<3.0
+gunicorn>=22.0,<23.0
+
+# AI 문서 파싱(ultimate_parser.py) / 이미지 처리용 - 컨테이너에는 필요 시에만 설치
+pdf2image>=1.17
+pillow>=10.0
+pymupdf>=1.24
+google-generativeai>=0.7
+google-cloud-vision>=3.7
+python-docx>=1.1

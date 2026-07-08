@@ -1,0 +1,14 @@
+# 빌드 이미지에 절대 구워 넣으면 안 되는 것들 - 특히 keys/(GCP 서비스 계정 키)는
+# 런타임에 docker-compose 볼륨으로 마운트해서 씁니다 (이미지 레이어에 비밀키가
+# 남으면 이미지를 어디에 올리든 그대로 유출되기 때문).
+keys/
+db.sqlite3
+media/
+staticfiles/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.json
+*.pdf
+.git/

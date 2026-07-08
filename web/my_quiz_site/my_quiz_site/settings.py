@@ -24,12 +24,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9t36!83tln8o4rk!*o^8b5o_^*h-%x+b@b1_@vz#(qx)=rfiha'
+# Previously hardcoded here (and committed to git along with the DB password
+# below) -- moved to an env var so real deploy secrets never touch source
+# control. Local/dev keeps the old insecure default so nothing breaks.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-9t36!83tln8o4rk!*o^8b5o_^*h-%x+b@b1_@vz#(qx)=rfiha',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -49,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # 반드시 최상단 근처에 추가
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -57,8 +68,23 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# 모든 도메인에서의 접속을 허용 (개발 단계용)
-CORS_ALLOW_ALL_ORIGINS = True
+# 모든 도메인에서의 접속을 허용 (개발 단계용). 운영 서버에서는 DJANGO_CORS_ALLOWED_ORIGINS로
+# Flutter 앱/웹이 실제로 쓰는 origin만 명시하는 걸 권장 (예: https://quiz.<도메인>).
+_cors_origins = [
+    origin.strip()
+    for origin in os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if _cors_origins:
+    CORS_ALLOWED_ORIGINS = _cors_origins
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 ROOT_URLCONF = 'my_quiz_site.urls'
 
@@ -85,14 +111,17 @@ WSGI_APPLICATION = 'my_quiz_site.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# 이전엔 DB 이름/계정/비밀번호가 여기 평문으로 박혀 있어서 git에 커밋된 소스에
+# 운영 DB 비밀번호가 그대로 노출되는 상태였습니다. 전부 환경변수로 전환.
+# 로컬 개발 기본값은 기존 값을 그대로 유지(설치.txt에 안내된 값과 동일).
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'quiz_db',          # 생성한 DB 이름
-        'USER': 'postgres',         # 기본 사용자 이름 (또는 본인이 설정한 이름)
-        'PASSWORD': '1107', # 설정한 비밀번호
-        'HOST': '127.0.0.1',        # 로컬 환경
-        'PORT': '5432',             # PostgreSQL 기본 포트
+        'NAME': os.environ.get('POSTGRES_DB', 'quiz_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '1107'),
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -132,3 +161,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
